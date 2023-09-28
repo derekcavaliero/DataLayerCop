@@ -165,9 +165,11 @@ class DataLayerCop
     if (this.config.report.toDataLayer === false)
       return;
 
+    test.payload = JSON.stringify(test.payload);
+
     this.getDataLayer().push({
       'event': 'gtm.pageError',
-      'gtm.errorMessage': test?.name,
+      'gtm.errorMessage': test.rule?.name,
       'datalayercop': test,
     });
 
