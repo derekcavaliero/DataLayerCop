@@ -41,9 +41,7 @@ For example, a simple rule that asserts that an `event` property exists in the d
 {
   name: 'Expects `event` property to exist',
   type: 'gtm',
-  assert: (payload) => {
-    payload.hasOwnProperty('event');
-  },
+  assert: (payload) => payload.hasOwnProperty('event'),
   dropOnFail: false,
   severity: 'critical'
 }
