@@ -1,0 +1,21 @@
+{
+  "name": "datalayercop",
+  "version": "1.0.0",
+  "description": "A utility library to enforce dataLayer conventions and syntax.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gtm",
+    "gtag",
+    "google tag manager",
+    "dataLayer",
+    "dataLayer testing"
+  ],
+  "author": "Derek Cavaliero <@derekcavaliero>",
+  "license": "MIT",
+  "devDependencies": {
+    "laravel-mix": "^6.0.49"
+  }
+}
