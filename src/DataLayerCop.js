@@ -61,20 +61,16 @@ class DataLayerCop
 
     const rules = {
 
-      event_property_is_defined: {
+      event_property_exists: {
         name: 'Expect payload to include an `event` property.',
-        assert: (payload) => {
-          return payload.event !== undefined;
-        },
+        assert: (payload) => payload.hasOwnProperty('event') && payload.event.length,
         dropOnFail: false,
         type: 'gtm',
       },
 
       event_is_namespaced: {
         name: 'Expect `event` property value to be prefixed with a namespace.',
-        assert: (payload) => {
-          return this.callStatic('isNamespaced', payload.event);
-        },
+        assert: (payload) => this.callStatic('isNamespaced', payload.event),
         dropOnFail: false,
         type: 'gtm',
       },
