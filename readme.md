@@ -89,6 +89,25 @@ In some situations you may way to prevent a dataLayer payload from being process
 #### severity
 This is a string that will be used to identify the severity in the event of a failure. Primary purpose of `severity` is for use with the `report` configuration option. By default, rules do not have a `severity` set. If you want to use the `report` configuration option, then you must set a `severity` for each rule. 
 
+## Static Methods
+You'll often find yourself needing to check string formats (e.g. snake_case vs. camelCase) or other simple assertions. DataLayerCop provides a few static methods that you can use to help keep your assertions easy to write.
+
+#### `DataLayerCop.isSnakeCase(string)`
+Returns `true` if the string is in snake_case format. Returns `false` if not.
+
+#### `DataLayerCop.isCamelCase(string)`
+Returns `true` if the string is in camelCase format. Returns `false` if not.
+
+#### `DataLayerCop.isPascalCase(string)`
+Returns `true` if the string is in PascalCase format. Returns `false` if not.
+
+#### `DataLayerCop.isNamespaced(string)`
+Returns `true` if the string is prefixed with a namespace (e.g. `something.an_event_name`). Returns `false` if not.
+
+#### `DataLayerCop.isObjectLiteral(input)`
+Returns `true` if the input is a simple object literal. Returns `false` if not.
+
+
 ## Reporting
 
 The default behavior of the DataLayerCop is to report failures to the browser console via `console.warn()`. This is useful for debugging purposes, but not very useful for production environments. To help with this, DataLayerCop provides a `report` configuration option that allows you to specify how you want to report failures. There are two built in reporting options: `toDataLayer` and `toUrl`.
