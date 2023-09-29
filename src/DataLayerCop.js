@@ -128,6 +128,33 @@ class DataLayerCop
 
   }
 
+  redactPayload(payload, payloadType) {
+
+    const pattern = 'name|email|tele|phone|address|street|country|city|state|province|region|zip|postal|country|birth|dob|born|gender|sex|race|ethnicity|height|weight|password';
+    
+    const properties = Object.keys(payload);
+
+    for (let i = 0; i < properties.length; i++) {
+    
+      let property = properties[i];
+      let value = payload[property];
+
+      if (typeof value === 'object') {
+        payload[property] = this.redactPayload(value);
+        continue;
+      }
+      
+      const regex = new RegExp(pattern, 'i');
+
+      if (regex.test(property))
+        payload[property] = '[REDACTED]';
+        
+    }
+    
+    return payload;
+
+  }
+
   processRules(payload, payloadType) {
 
     for (let i = 0; i < this.config.rules.length; i++) {
@@ -183,6 +210,8 @@ class DataLayerCop
       url: location.href,
       user_agent: navigator.userAgent,
     };
+
+    test.payload = this.redactPayload(test.payload);
 
     Object.assign(payload, test);
 
