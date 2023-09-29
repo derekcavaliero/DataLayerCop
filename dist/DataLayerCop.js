@@ -9,4 +9,370 @@
  * Version: 1.0.beta
  * License: MIT
  */
-"use strict";class DataLayerCop{constructor(e={}){this.config={},Object.assign(this.config,{dataLayer:"dataLayer",preferredCase:"snake",report:{toUrl:!1,toDataLayer:!1},rules:[]},e),this.setDataLayer(),this.registerRules(),Array.isArray(this.config.rules)&&this.config.rules?.length?(this.modifyPushMethod(),this.getDataLayer().push({event:"datalayercop.loaded",rules:this.config.rules})):this.console("warn","No rules defined.")}setDataLayer(){window[this.config.dataLayer]=window[this.config.dataLayer]||[]}getDataLayer(){return window[this.config.dataLayer]}getPredefinedRule(e){return{event_property_exists:{name:"Expect payload to include an `event` property.",assert:e=>e.hasOwnProperty("event")&&e.event.length,dropOnFail:!1,type:"gtm"},event_is_namespaced:{name:"Expect `event` property value to be prefixed with a namespace.",assert:e=>this.callStatic("isNamespaced",e.event),dropOnFail:!1,type:"gtm"},payload_properties_are_preferred_case:{name:`Expect all payload properties to match preferred case (${this.config.preferredCase}).`,assert:e=>{const t=Object.keys(e);for(let e=0;e<t.length;e++)if(!this.isPreferredCase(t[e]))return!1;return!0},dropOnFail:!1},event_is_preferred_case_after_namespace:{name:`Expect \`event\` property value to match preferred case (${this.config.preferredCase}) after namespace.`,assert:e=>{if(!this.callStatic("isNamespaced",e.event))return!0;const t=e.event.split(".")[1];return this.isPreferredCase(t)},dropOnFail:!1,type:"gtm"}}[e]||{}}registerRules(){this.config.rules=this.config.rules.map((e=>(e.predefined&&delete(e=Object.assign({},this.getPredefinedRule(e.predefined),e)).predefined,e)))}redactPayload(e,t){const r=Object.keys(e);for(let t=0;t<r.length;t++){let a=r[t],s=e[a];if("object"==typeof s){e[a]=this.redactPayload(s);continue}new RegExp("name|email|tele|phone|address|street|country|city|state|province|region|zip|postal|country|birth|dob|born|gender|sex|race|ethnicity|height|weight|password","i").test(a)&&(e[a]="[REDACTED]")}return e}processRules(e,t){for(let r=0;r<this.config.rules.length;r++){let a=this.config.rules[r];if(a?.type&&a.type!==t)continue;let s=this.enforce(a,e,t);if(!s.passed&&(this.config.report.only.includes(a?.severity)&&(this.reportToUrl(s),this.reportToDataLayer(s)),a.dropOnFail))return!1}return e}reportToDataLayer(e){!1!==this.config.report.toDataLayer&&(e.payload=JSON.stringify(e.payload),this.getDataLayer().push({event:"gtm.pageError","gtm.errorMessage":e.rule?.name,datalayercop:e}))}reportToUrl(e){if(!this.isValidUrl(this.config.report.toUrl))return void this.console("warn",`Attempted to report to URL - but an invalid URL was provided (${this.config.report.toUrl}).`);let t={hostname:location.hostname,url:location.href,user_agent:navigator.userAgent};e.payload=this.redactPayload(e.payload),Object.assign(t,e),navigator.sendBeacon(this.config.report.toUrl,JSON.stringify(t))}modifyPushMethod(){var e=this,t=this.getDataLayer().push;this.getDataLayer().push=function(){let r;if(e.isArgumentsObject(arguments[0])){let t=arguments[0];"event"==t[0]&&(r=e.processRules(t,"gtag"))}else e.callStatic("isObjectLiteral",arguments[0])&&(r=arguments[0],r?.event?.startsWith("gtm.")||(r=e.processRules(r,"gtm")));if(r)return t(r)}}enforce(e={},t,r){let a={rule:e,payload:t,payloadType:r};return"function"!=typeof e.assert?(this.console("warn","Rule object is missing assert method - skipping...",e),a.passed=!0,a):(a.passed=e.assert(t,r),a.passed||this.console("warn",`${r} payload failed rule: ${e?.name}`,a),a)}callStatic(e,...t){return DataLayerCop[e].apply(this,t)}console(e,t,r){console[e](`🚨 ${this.config.dataLayer} Cop - ${t}`,r)}isArgumentsObject(e){return"[object Arguments]"===Object.prototype.toString.call(e)}isValidUrl(e){try{var t=new URL(e)}catch(e){return!1}return"https:"===t.protocol}static getCommonPattern(e){switch(e){case"snake":return/^[a-z0-9_]+$/;case"camel":return/^[a-z0-9]+([A-Z][a-z0-9]+)*$/;case"pascal":return/^[A-Z][a-z0-9]+([A-Z][a-z0-9]+)*$/;case"namespaced":return/^([a-zA-Z0-9_]+\.)/;default:return e}}isPreferredCase(e){return DataLayerCop.getCommonPattern(this.config.preferredCase).test(e)}static isObjectLiteral(e){var t=e;return"object"==typeof e&&null!==e&&function(){for(;null!==Object.getPrototypeOf(t=Object.getPrototypeOf(t)););return Object.getPrototypeOf(e)===t}()}static isSnakeCase(e){return DataLayerCop.getCommonPattern("snake").test(e)}static isCamelCase(e){return DataLayerCop.getCommonPattern("camel").test(e)}static isPascalCase(e){return DataLayerCop.getCommonPattern("pascal").test(e)}static isNamespaced(e){return DataLayerCop.getCommonPattern("namespaced").test(e)}}
+
+"use strict";
+
+class DataLayerCop 
+{
+
+  constructor(config = {}) {
+
+    const defaults = {
+      dataLayer: 'dataLayer', 
+      preferredCase: 'snake', // One of 'snake', 'camel', or 'pascal'.
+      report: {
+        toUrl: false,
+        toDataLayer: false,
+      },        
+      rules: [],
+    };
+
+    this.config = {};
+
+    Object.assign(this.config, defaults, config);
+      
+    this.setDataLayer();
+
+    this.registerRules();
+
+    if (!Array.isArray(this.config.rules) || !this.config.rules?.length) {
+      this.console('warn', 'No rules defined.');
+      return;
+    }
+
+    this.modifyPushMethod();
+
+    this.getDataLayer().push({
+      event: 'datalayercop.loaded',
+      rules: this.config.rules
+    });
+
+  }
+
+  setDataLayer() {
+    window[this.config.dataLayer] = window[this.config.dataLayer] || [];
+  }
+
+  getDataLayer() {
+    return window[this.config.dataLayer];
+  }
+
+  getPredefinedRule(key) {
+
+    const rules = {
+
+      event_property_exists: {
+        name: 'Expect payload to include an `event` property.',
+        assert: (payload) => payload.hasOwnProperty('event') && payload.event.length,
+        dropOnFail: false,
+        type: 'gtm',
+      },
+
+      event_is_namespaced: {
+        name: 'Expect `event` property value to be prefixed with a namespace.',
+        assert: (payload) => this.callStatic('isNamespaced', payload.event),
+        dropOnFail: false,
+        type: 'gtm',
+      },
+
+      payload_properties_are_preferred_case: {
+        name: `Expect all payload properties to match preferred case (${this.config.preferredCase}).`,
+        assert: (payload) => {
+          
+          const properties = Object.keys(payload);
+
+          for (let i = 0; i < properties.length; i++) {
+            if (!this.isPreferredCase(properties[i]))
+              return false;
+          }
+
+          return true;
+
+        },
+        dropOnFail: false
+      },
+
+      event_is_preferred_case_after_namespace: {
+        name: `Expect \`event\` property value to match preferred case (${this.config.preferredCase}) after namespace.`,
+        assert: (payload) => {
+
+          if (!this.callStatic('isNamespaced', payload.event))
+            return true;
+
+          const event = payload.event.split('.')[1];
+          return this.isPreferredCase(event);
+
+        },
+        dropOnFail: false,
+        type: 'gtm',
+      },
+
+    };
+
+    return rules[key] || {};
+
+  }
+
+  registerRules() {
+
+    this.config.rules = this.config.rules.map((rule) => {
+
+      if (rule.predefined) {
+        rule = Object.assign({}, this.getPredefinedRule(rule.predefined), rule);
+        delete rule.predefined;
+      }
+
+      return rule;
+
+    });
+
+  }
+
+  redactPayload(payload, payloadType) {
+
+    const pattern = 'name|email|tele|phone|address|street|country|city|state|province|region|zip|postal|country|birth|dob|born|gender|sex|race|ethnicity|height|weight|password';
+    
+    const properties = Object.keys(payload);
+
+    for (let i = 0; i < properties.length; i++) {
+    
+      let property = properties[i];
+      let value = payload[property];
+
+      if (typeof value === 'object') {
+        payload[property] = this.redactPayload(value);
+        continue;
+      }
+      
+      const regex = new RegExp(pattern, 'i');
+
+      if (regex.test(property))
+        payload[property] = '[REDACTED]';
+        
+    }
+    
+    return payload;
+
+  }
+
+  processRules(payload, payloadType) {
+
+    for (let i = 0; i < this.config.rules.length; i++) {
+
+      let rule = this.config.rules[i];
+
+      if (rule?.type && rule.type !== payloadType)
+        continue;
+
+      let test = this.enforce(rule, payload, payloadType);
+
+      if (test.passed)
+        continue;
+
+      if (this.config.report.only.includes(rule?.severity)) {
+        this.reportToUrl(test);
+        this.reportToDataLayer(test);
+      }
+      
+      if (rule.dropOnFail)
+        return false;
+      
+    }
+    
+    return payload;
+
+  }
+
+  reportToDataLayer(test) {
+
+    if (this.config.report.toDataLayer === false)
+      return;
+
+    test.payload = JSON.stringify(test.payload);
+
+    this.getDataLayer().push({
+      'event': 'gtm.pageError',
+      'gtm.errorMessage': test.rule?.name,
+      'datalayercop': test,
+    });
+
+  }
+
+  reportToUrl(test) {
+
+    if (!this.isValidUrl(this.config.report.toUrl)) {
+      this.console('warn', `Attempted to report to URL - but an invalid URL was provided (${this.config.report.toUrl}).`);
+      return;
+    }
+
+    let payload = {
+      hostname: location.hostname,
+      url: location.href,
+      user_agent: navigator.userAgent,
+    };
+
+    test.payload = this.redactPayload(test.payload);
+
+    Object.assign(payload, test);
+
+    navigator.sendBeacon(this.config.report.toUrl, JSON.stringify(payload));
+
+  }
+
+  modifyPushMethod() {
+
+    var _this = this;
+    var originalPush = this.getDataLayer().push;
+    
+    this.getDataLayer().push = function() {
+
+      let payload;
+
+      if (_this.isArgumentsObject(arguments[0])) {
+          
+        /**
+         * If arguments[0] is an arguments object, it is more than likely a gtag command.
+         * one of: 'config', 'event', 'set', 'js', 'get', 'consent'
+         * https://developers.google.com/gtagjs/reference/api
+         */
+
+        let command = arguments[0];
+        
+        if (command[0] == 'event')
+          payload = _this.processRules(command, 'gtag');
+
+      } else if (_this.callStatic('isObjectLiteral', arguments[0])) {
+
+        /**
+         * If argument[0] is an object literal - its likely a Google Tag Manager dataLayer payload. 
+         */
+        
+        payload = arguments[0];
+
+        // All dataLayer events namespaced with 'gtm.' are reserved for GTM internal use and should bypass any rules.
+        if (!payload?.event?.startsWith('gtm.'))
+          payload = _this.processRules(payload, 'gtm');
+
+      }
+
+      // if (payload && typeof payload !== 'array')
+      //   payload = [payload];
+  
+      if (payload)
+        return originalPush(payload);
+
+    };
+
+  }
+
+  enforce(rule = {}, payload, payloadType) {
+
+    let test = {
+      rule,
+      payload,
+      payloadType
+    };
+
+    if (typeof rule.assert !== 'function') {
+      
+      this.console('warn', 'Rule object is missing assert method - skipping...', rule); 
+      
+      test.passed = true;
+      return test;
+
+    }
+
+    test.passed = rule.assert(payload, payloadType);
+    
+    if (!test.passed)
+      this.console('warn', `${payloadType} payload failed rule: ${rule?.name}`, test);
+
+    return test;
+
+  }
+
+  callStatic(method, ...args) {
+    return DataLayerCop[method].apply(this, args);
+  }
+
+  console(method, message, data) {
+    console[method](`🚨 ${this.config.dataLayer} Cop - ${message}`, data);
+  }
+
+  isArgumentsObject(item) {
+    return Object.prototype.toString.call(item) === '[object Arguments]';
+  }
+
+  isValidUrl(string) {
+    
+    try {
+      var url = new URL(string);
+    } catch (error) {
+      return false;  
+    }
+
+    return url.protocol === 'https:';
+
+  }
+
+  static getCommonPattern(pattern) {
+    
+    switch (pattern) {
+      case 'snake':
+        return /^[a-z0-9_]+$/;
+      case 'camel':
+        return /^[a-z0-9]+([A-Z][a-z0-9]+)*$/;
+      case 'pascal':
+        return /^[A-Z][a-z0-9]+([A-Z][a-z0-9]+)*$/;
+      case 'namespaced':
+        return /^([a-zA-Z0-9_]+\.)/;
+      default:
+        return pattern;
+    }
+
+  }
+
+  isPreferredCase(string) {
+    return DataLayerCop.getCommonPattern(this.config.preferredCase).test(string);
+  }
+
+  static isObjectLiteral(input) {
+
+    var _test  = input;
+
+    return ( typeof input !== 'object' || input === null ?
+                false :  
+                (
+                  (function () {
+
+                    while (!false) {
+                      if (Object.getPrototypeOf(_test = Object.getPrototypeOf(_test)) === null) {
+                        break;
+                      }      
+                    }
+
+                    return Object.getPrototypeOf(input) === _test;
+
+                  })()
+                )
+            );
+
+  }
+
+  static isSnakeCase(string) {
+    return DataLayerCop.getCommonPattern('snake').test(string);
+  }
+
+  static isCamelCase(string) {
+    return DataLayerCop.getCommonPattern('camel').test(string);
+  }
+
+  static isPascalCase(string) {
+    return DataLayerCop.getCommonPattern('pascal').test(string);
+  }
+
+  static isNamespaced(string) {
+    return DataLayerCop.getCommonPattern('namespaced').test(string);
+  }
+
+}

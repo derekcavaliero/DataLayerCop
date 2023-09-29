@@ -1,4 +1,5 @@
 {
-    "/dist/DataLayerCop.babel.js": "/dist/DataLayerCop.babel.js",
-    "/dist/DataLayerCop.js": "/dist/DataLayerCop.js"
+    "/dist/DataLayerCop.js": "/dist/DataLayerCop.js",
+    "/dist/DataLayerCop.min.js": "/dist/DataLayerCop.min.js",
+    "/dist/DataLayerCop.babel.js": "/dist/DataLayerCop.babel.js"
 }
