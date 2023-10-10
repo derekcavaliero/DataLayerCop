@@ -20,14 +20,13 @@ class DataLayerCop
     const defaults = {
       dataLayer: 'dataLayer', 
       preferredCase: 'snake', // One of 'snake', 'camel', or 'pascal'.
-      report: {
-        toUrl: false,
-        toDataLayer: false,
-      },        
+      reportToUrl: false,
+      reportToDataLayer: false,
+      reportOnly: [],
       rules: [],
     };
 
-    this.#config = this.#recursiveMerge(defaults, config); 
+    this.#config = Object.assign(this.#config, defaults, config);
       
     this.#setDataLayer();
 
@@ -45,19 +44,6 @@ class DataLayerCop
       rules: this.#config.rules
     });
 
-  }
-
-  #recursiveMerge(target, source) {
-      
-    for (const key of Object.keys(source)) {
-      if (source[key] instanceof Object)
-        Object.assign(source[key], this.#recursiveMerge(target[key], source[key]));
-    }
-
-    Object.assign(target || {}, source);
-
-    return target;
-  
   }
 
   #setDataLayer() {
@@ -225,11 +211,11 @@ class DataLayerCop
       if (test.passed)
         continue;
 
-      if (this.#config.report.only.includes(rule?.severity)) {
+      if (this.#config.reportOnly.includes(rule?.severity)) {
 
         this.#reportToDataLayer(test);
 
-        if (this.#config.report.toUrl)
+        if (this.#config.reportToUrl)
           this.#reportToUrl(test);
 
       }
@@ -250,7 +236,7 @@ class DataLayerCop
 
   #reportToDataLayer(test) {
 
-    if (this.#config.report.toDataLayer === false)
+    if (this.#config.reportToDataLayer === false)
       return;
 
     this.#getDataLayer().push({
@@ -263,8 +249,8 @@ class DataLayerCop
 
   #reportToUrl(rule) {
 
-    if (!this.#isValidUrl(this.#config.report.toUrl)) {
-      this.#reportToConsole('warn', `Attempted to report to URL - but an invalid URL was provided (${this.#config.report.toUrl}).`, payload);
+    if (!this.#isValidUrl(this.#config.reportToUrl)) {
+      this.#reportToConsole('warn', `Attempted to report to URL - but an invalid URL was provided (${this.#config.reportToUrl}).`, payload);
       return;
     }
 
@@ -278,7 +264,7 @@ class DataLayerCop
 
     data.payload = this.#redactPayload(data.payload);
 
-    navigator.sendBeacon(this.#config.report.toUrl, JSON.stringify(data));
+    navigator.sendBeacon(this.#config.reportToUrl, JSON.stringify(data));
 
   }
 
